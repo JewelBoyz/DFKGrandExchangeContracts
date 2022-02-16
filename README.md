@@ -1,8 +1,8 @@
-# Basic Sample Hardhat Project
+# DFK Grand Exchange
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, a sample script that deploys that contract, and an example of a task implementation, which simply lists the available accounts.
+Shoutout to RuneScape for the great idea. 
 
-Try running some of the following tasks:
+Hardhat commands:
 
 ```shell
 npx hardhat accounts
