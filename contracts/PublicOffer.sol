@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Unlicense
-pragma solidity ^0.8.4;
+pragma solidity 0.6.12;
 
 import {IERC20} from "./interfaces/IERC20.sol";
 import {IOwnable} from "./interfaces/IOwnable.sol";
@@ -27,7 +27,7 @@ contract PublicOffer {
         uint256 _paymentAmount,
         address _item,
         uint256 _fee
-    ){
+    ) public {
         factory = msg.sender;
         seller = _seller;
         paymentToken = _paymentToken;

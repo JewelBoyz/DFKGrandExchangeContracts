@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Unlicense
-pragma solidity ^0.8.4;
+pragma solidity 0.6.12;
 
 interface IERC20 {
     function balanceOf(address _holder) external view returns (uint256);

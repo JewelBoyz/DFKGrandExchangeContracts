@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts v4.4.1 (access/Ownable.sol)
 
-pragma solidity ^0.8.4;
+pragma solidity 0.6.12;
 
 import "./Context.sol";
 
@@ -25,7 +25,7 @@ abstract contract Ownable is Context {
     /**
      * @dev Initializes the contract setting the deployer as the initial owner.
      */
-    constructor() {
+    constructor() public {
         _transferOwnership(_msgSender());
     }
 

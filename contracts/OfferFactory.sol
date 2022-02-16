@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Unlicense
-pragma solidity ^0.8.4;
+pragma solidity 0.6.12;
 
 import {Ownable} from "./open-zeppelin/Ownable.sol";
 import{PublicOffer} from "./PublicOffer.sol";
