@@ -2,51 +2,63 @@
 pragma solidity 0.6.12;
 
 import {Ownable} from "./open-zeppelin/Ownable.sol";
-import{PublicOffer} from "./PublicOffer.sol";
+import {SellOffer} from "./SellOffer.sol";
+import {BuyOffer} from "./BuyOffer.sol";
+
 
 contract OfferFactory is Ownable {
     uint256 public fee = 150; //1.5%
-    PublicOffer[] public publicOffers;
+    BuyOffer[] public buyOffers;
+    SellOffer[] public sellOffers; 
 
-    event OfferCreated(address offerAddress,address item,address paymentToken,uint256 amount);
+    event OfferCreated(address offerAddress,address item,uint256 itemCount, address paymentToken,uint256 amount);
 
     function setFee(uint256 _fee) public onlyOwner { 
         fee = _fee;
     }
-    function createPublicOffer(address item, address paymentToken,uint256 amount) public returns (PublicOffer){
-        PublicOffer offer = new PublicOffer(msg.sender,paymentToken,amount,item,fee);
-        publicOffers.push(offer);
-        emit OfferCreated(address(offer),item,paymentToken,amount);
-        return offer; 
-    }
-    function getPublicActiveOffers() public view returns (PublicOffer[] memory){
-        PublicOffer[] memory activeOffers = new PublicOffer[](publicOffers.length);
-        uint256 count;
-        for (uint256 i; i < publicOffers.length; i++){
-            PublicOffer offer = PublicOffer(publicOffers[i]);
-            if (offer.hasToken() && !offer.closed()){
-                activeOffers[count++] = offer;
+    function createBuyOrder(address item, uint256 itemCount, address paymentToken, uint256 paymentAmount) public returns (BuyOffer) {
+        BuyOffer offer = new BuyOffer(msg.sender,paymentToken,paymentAmount,item,itemCount,fee);
+        emit OfferCreated(address(offer),item, itemCount, paymentToken, paymentAmount);
+        //try to look through sell offers and complete
+        //if completed, no need to add to array
+        for(uint256 i;i<sellOffers.length;i++){
+            SellOffer sell = SellOffer(sellOffers[i]);
+            if (sell.item() == item && sell.paymentToken() == paymentToken && !sell.closed()){
+                offer.completeOrder(sell);
+                if (offer.closed()){
+                    return offer;
+                }
             }
         }
-        return activeOffers;
+        buyOffers.push(offer); 
+        return offer;
     }
-    // function getCompleteOffers() public view returns (PublicOffer[] memory,PrivateOffer[] memory){
-    //     PublicOffer[] memory closedPublicOffers = new PublicOffer[](publicOffers.length);
-    //     uint256 countPublic;
+    function createSellOrder(address item, uint256 itemCount, address paymentToken, uint256 paymentAmount) public returns (SellOffer) {
+        SellOffer offer = new SellOffer(msg.sender,paymentToken,paymentAmount,item,itemCount,fee);
+        emit OfferCreated(address(offer),item, itemCount, paymentToken, paymentAmount);
+        //try to look through sell offers and complete
+        //if completed, no need to add to array
+        for(uint256 i;i<buyOffers.length;i++){
+            BuyOffer buy = BuyOffer(buyOffers[i]);
+            if (buy.item() == item && buy.paymentToken() == paymentToken && !buy.closed()){
+                buy.completeOrder(offer);
+                if (offer.closed()){
+                    return offer;
+                }
+            }
+        }
+        sellOffers.push(offer); 
+        return offer;
+    }
+    // function getPublicActiveOffers() public view returns (PublicOffer[] memory){
+    //     PublicOffer[] memory activeOffers = new PublicOffer[](publicOffers.length);
+    //     uint256 count;
     //     for (uint256 i; i < publicOffers.length; i++){
     //         PublicOffer offer = PublicOffer(publicOffers[i]);
-    //         if (offer.closed()){
-    //             closedPublicOffers[countPublic++] = offer;
+    //         if (offer.hasToken() && !offer.closed()){
+    //             activeOffers[count++] = offer;
     //         }
     //     }
-    //     PrivateOffer[] memory closedPrivateOffers = new PrivateOffer[](privateOffers.length);
-    //     uint256 countPrivate;
-    //     for (uint256 i; i < privateOffers.length; i++){
-    //         PrivateOffer offer = PrivateOffer(privateOffers[i]);
-    //         if (offer.closed()){
-    //             closedPrivateOffers[countPrivate++] = offer;
-    //         }
-    //     }
-    //     return (closedPublicOffers,closedPrivateOffers);
+    //     return activeOffers;
     // }
 }

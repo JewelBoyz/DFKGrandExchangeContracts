@@ -3,29 +3,31 @@ pragma solidity 0.6.12;
 
 import {IERC20} from "./interfaces/IERC20.sol";
 import {IOwnable} from "./interfaces/IOwnable.sol";
-// import {UniswapV2Pair} from "@uniswapv2/UniswapV2Pair.sol";
 
-contract PublicOffer {
+contract SellOffer {
     address public constant USDC = 0x985458E523dB3d53125813eD68c274899e9DfAb4;
     address public constant UST = 0x224e64ec1BDce3870a6a6c777eDd450454068FEC;
     address public constant JEWEL = 0x72Cb10C6bfA5624dD07Ef608027E366bd690048F;
 
-    address public immutable factory;
-    address public immutable seller;
-    address public immutable paymentToken;
-    uint256 public immutable paymentAmount;
-    uint256 public immutable fee;
-    address public immutable item;
+    address public factory;
+    address public seller;
+    address public paymentToken;
+    uint256 public paymentAmount;
+    uint256 public fee;
+    address public item;
     bool public closed = false;
     
     event OfferComplete(address buyer,address item,uint256 itemCount,address paymentToken,uint256 paymentAmount);
-    event OfferCanceled(address buyer,address item,uint256 itemCount);
+    event OfferPartialComplete(address buyer,address item,uint256 itemCount,address paymentToken,uint256 paymentAmount);
+
+    event OfferCanceled(address item,uint256 itemCount);
 
     constructor(
         address _seller,
         address _paymentToken,
         uint256 _paymentAmount,
         address _item,
+        uint256 _itemCount,
         uint256 _fee
     ) public {
         factory = msg.sender;
@@ -34,6 +36,8 @@ contract PublicOffer {
         paymentAmount = _paymentAmount;
         item = _item;
         fee = _fee;
+        require(IERC20(_item).balanceOf(_seller)>= _itemCount,"Amount willing to pay exceeds amount available");
+        safeTransferFrom(_item,_seller, address(this),_itemCount);
     }
     
 
@@ -59,31 +63,28 @@ contract PublicOffer {
             safeTransfer(token, IOwnable(factory).owner(),balance);
         }
     }
-    function completeOrder() public{
-        require(hasToken(),"No item on this address");
-        require(!closed,"Order already completed");
+    //Completing orders is done on the BuyOffer contract
 
-        uint256 balance = IERC20(item).balanceOf(address(this));
-
-        uint256 serviceFee = (paymentAmount*fee)/10_000;
-
-        uint256 finalAmount = paymentAmount-serviceFee;        
-        
-        safeTransferFrom(paymentToken, msg.sender, IOwnable(factory).owner(), serviceFee);
-        safeTransferFrom(paymentToken,msg.sender,seller,finalAmount);
-        safeTransfer(item,msg.sender,balance);
-        closed = true;
-        emit OfferComplete(msg.sender,item,balance,paymentToken,paymentAmount);
-    }
+  
     function cancelOrder() public{
         require(hasToken(),"No item on this address");
         require(msg.sender == seller,"This address is not the seller");
         uint256 balance = IERC20(item).balanceOf(address(this));
         safeTransfer(item,seller,balance);
         closed = true;
-        emit OfferCanceled(seller,item,balance);
+        emit OfferCanceled(item,balance);
     }
     function hasToken() public view returns (bool){
         return IERC20(item).balanceOf(address(this)) > 0;
+    }
+    function close(address buyer, address item,uint256 itemCount,address paymentToken,uint256 paymentAmount) public {
+        closed = true;
+        emit OfferComplete(buyer,item,itemCount,paymentToken,paymentAmount);
+    }
+    function partialComplete(address buyer, address item,uint256 itemCount,address paymentToken,uint256 paymentAmount) public {
+        emit OfferPartialComplete(buyer,item,itemCount,paymentToken,paymentAmount);
+    }
+    function adjustPaymentAmount(uint256 amount) public{
+        paymentAmount-=amount;
     }
 }
